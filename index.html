@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Painel de Riscos Jurídicos — Seven Participações</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--navy:#1B3A5C;--slate:#344D6B;--ice:#E8EEF4;--ice2:#F2F5F9;--off:#F7F7F6;
+--border:#D0D5DC;--text:#1A1916;--text2:#4A5260;--text3:#8A909C;
+--ok:#1E5C3A;--ok-bg:#E6F2EC;--warn:#7A4A0E;--warn-bg:#F5EDDF;
+--crit:#7A1E1E;--crit-bg:#F2E8E8;--await:#1B3A5C;--await-bg:#E8EEF4;
+--pend:#555566;--pend-bg:#EBEBEB;--atr:#791F1F;--atr-bg:#F7C1C1;--gold:#C9A84C}
+body{font-family:'Segoe UI',Calibri,sans-serif;background:#EEF1F5;color:var(--text);font-size:13px;min-height:100vh}
+.topbar{background:var(--navy);color:#fff;padding:16px 32px;display:flex;justify-content:space-between;align-items:center}
+.t-org{font-size:10px;letter-spacing:.15em;text-transform:uppercase;opacity:.5;margin-bottom:4px}
+.topbar h1{font-size:18px;font-weight:500}
+.t-right{text-align:right;font-size:11px}
+.t-comite{color:var(--gold);font-size:11px;font-weight:600;display:block;margin-bottom:2px}
+.t-upd{opacity:.6;font-family:monospace;font-size:10px}
+.stbar{background:var(--slate);padding:7px 32px;font-size:11px;color:rgba(255,255,255,.75);display:flex;align-items:center;gap:10px}
+.sp{width:12px;height:12px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.nav{background:#fff;border-bottom:1px solid var(--border);padding:0 32px;display:flex;position:sticky;top:0;z-index:100;box-shadow:0 1px 4px rgba(0,0,0,.06);overflow-x:auto}
+.tab{padding:12px 18px;font-size:11px;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
+.tab:hover{color:var(--text2)}.tab.active{color:var(--navy);border-bottom-color:var(--navy);font-weight:700}
+.main{padding:24px 32px;max-width:1440px;margin:0 auto}
+.pane{display:none}.pane.active{display:block}
+.card{background:#fff;border:1px solid var(--border);border-radius:10px;padding:18px 20px;margin-bottom:14px}
+.ct{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);font-weight:700;margin-bottom:14px;padding-bottom:10px;border-bottom:.5px solid var(--border)}
+.g3{display:grid;grid-template-columns:2fr 1fr;gap:16px}
+.kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-bottom:18px}
+.kpi{background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px 18px}
+.kl{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);font-weight:700;margin-bottom:8px}
+.kn{font-size:32px;font-weight:500;font-family:monospace;line-height:1}
+.ks{font-size:11px;color:var(--text3);margin-top:4px}
+.kn.blue{color:var(--navy)}.kn.red{color:var(--crit)}.kn.amber{color:var(--warn)}.kn.green{color:var(--ok)}
+.bd{display:inline-block;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:700;white-space:nowrap}
+.bd-crit{background:var(--crit-bg);color:var(--crit)}.bd-altocrit{background:var(--crit-bg);color:var(--crit)}
+.bd-alto{background:var(--warn-bg);color:var(--warn)}.bd-mod{background:var(--ice);color:var(--navy)}
+.bd-ok{background:var(--ok-bg);color:var(--ok)}.bd-and{background:var(--warn-bg);color:var(--warn)}
+.bd-await{background:var(--await-bg);color:var(--await)}.bd-pend{background:var(--pend-bg);color:var(--pend)}
+.bd-atr{background:var(--atr-bg);color:var(--atr)}.bd-trat{background:var(--await-bg);color:var(--navy)}
+.bd-id{background:var(--pend-bg);color:var(--pend)}.bd-enc{background:#e8e8e8;color:#888}
+.tbl{width:100%;border-collapse:collapse;font-size:12px}
+.tbl th{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);font-weight:700;padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);background:var(--off)}
+.tbl td{padding:9px 12px;border-bottom:.5px solid var(--border);color:var(--text2);vertical-align:middle;line-height:1.4}
+.tbl tr:last-child td{border-bottom:none}.tbl tr:hover td{background:#FAFAF8}
+.cod{font-family:monospace;font-size:10px;background:var(--ice);color:var(--navy);padding:2px 6px;border-radius:3px;font-weight:700}
+.pr{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.prl{font-size:11px;color:var(--text2);width:190px;flex-shrink:0;line-height:1.3}
+.prt{flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.prf{height:100%;border-radius:3px;background:var(--navy);transition:width .8s}
+.prp{font-size:11px;font-family:monospace;color:var(--text2);width:36px;text-align:right}
+.hmg{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+.hmc{border-radius:5px;height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:transform .1s;font-size:9px;font-weight:700;gap:2px;padding:4px}
+.hmc:hover{transform:scale(1.07);z-index:2;position:relative}
+.hmtip{display:none;margin-top:12px;padding:12px 16px;background:var(--ice2);border:1px solid var(--border);border-radius:6px;font-size:12px;color:var(--text2);line-height:1.6}
+.hml{display:flex;gap:14px;margin-top:16px;flex-wrap:wrap}
+.hmli{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3)}
+.hmlsq{width:12px;height:12px;border-radius:2px}
+.tli{display:flex;gap:14px}
+.tll{display:flex;flex-direction:column;align-items:center;width:32px;flex-shrink:0}
+.tld{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;font-family:monospace}
+.tld.done{background:var(--navy);color:#fff}.tld.now{background:var(--warn);color:#fff;box-shadow:0 0 0 4px var(--warn-bg)}
+.tld.future{background:var(--off);color:var(--text3);border:1.5px solid var(--border)}
+.tlln{flex:1;width:1px;background:var(--border);margin:4px 0}
+.tlc{flex:1;padding-bottom:20px}
+.tldt{font-size:10px;font-family:monospace;color:var(--text3);margin-bottom:3px}
+.tltit{font-size:13px;font-weight:600;color:var(--text);margin-bottom:5px}
+.tldsc{font-size:11px;color:var(--text2);line-height:1.65}
+.tltgs{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.filt{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.fb{padding:5px 14px;font-size:11px;border:1px solid var(--border);border-radius:20px;cursor:pointer;background:#fff;color:var(--text2);transition:all .15s}
+.fb:hover{border-color:var(--navy);color:var(--navy)}.fb.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+.leg{display:flex;flex-wrap:wrap;gap:10px;font-size:11px;color:var(--text2);margin-bottom:12px}
+.lgi{display:flex;align-items:center;gap:5px}.lgsq{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+.chw{position:relative;width:100%}
+.ovl{position:fixed;inset:0;background:rgba(27,58,92,.9);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;gap:16px}
+.ovl .sp{width:36px;height:36px;border-width:3px}.ovl p{color:#fff;font-size:14px;opacity:.8}
+.late{color:var(--crit);font-weight:700}
+@media(max-width:900px){.topbar,.main,.nav,.stbar{padding-left:16px;padding-right:16px}.kpis{grid-template-columns:repeat(2,1fr)}.g3{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div class="ovl" id="ovl"><div class="sp"></div><p id="ovl-msg">Carregando painel...</p></div>
+
+<header class="topbar">
+  <div>
+    <div class="t-org">Seven Participações · Centro de Serviço Compartilhado</div>
+    <h1>Painel de Monitoramento de Riscos Jurídicos</h1>
+  </div>
+  <div class="t-right">
+    <span class="t-comite">Comitê de Risco — Jurídico · Controladoria</span>
+    <span class="t-upd" id="t-upd">Carregando...</span>
+  </div>
+</header>
+
+<div class="stbar"><div class="sp" id="st-sp"></div><span id="st-msg">Conectando...</span></div>
+
+<nav class="nav">
+  <div class="tab active" onclick="showTab('exec',this)">Visão executiva</div>
+  <div class="tab" onclick="showTab('heat',this)">Mapa de risco</div>
+  <div class="tab" onclick="showTab('acoes',this)">Painel de ações</div>
+  <div class="tab" onclick="showTab('tl',this)">Linha do tempo</div>
+</nav>
+
+<main class="main">
+<div id="exec" class="pane active">
+  <div class="kpis" id="kpis"></div>
+  <div class="g3">
+    <div>
+      <div class="card"><div class="ct">Riscos identificados</div>
+        <table class="tbl"><thead><tr><th>Código</th><th>Risco</th><th>Nível</th><th>Status</th><th>Score</th><th>Mitigação</th></tr></thead>
+        <tbody id="tbl-r"></tbody></table></div>
+      <div class="card"><div class="ct">Progresso de mitigação — em tratamento</div><div id="prog"></div></div>
+    </div>
+    <div>
+      <div class="card"><div class="ct">Ações por status</div><div class="leg" id="leg-a"></div><div class="chw" style="height:200px"><canvas id="ch-a"></canvas></div></div>
+      <div class="card"><div class="ct">Riscos por nível</div><div class="leg" id="leg-n"></div><div class="chw" style="height:160px"><canvas id="ch-n"></canvas></div></div>
+    </div>
+  </div>
+</div>
+
+<div id="heat" class="pane">
+  <div class="card"><div class="ct">Heatmap — Impacto × Probabilidade</div>
+    <p style="font-size:11px;color:var(--text3);margin-bottom:16px">Eixo X = probabilidade (1–5) · Eixo Y = impacto (1–5) · Clique para ver detalhes</p>
+    <div style="display:flex;gap:20px;align-items:flex-start">
+      <div style="flex-shrink:0;width:32px">
+        <div style="height:56px;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text3)">5</div>
+        <div style="height:56px;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text3)">4</div>
+        <div style="height:56px;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text3)">3</div>
+        <div style="height:56px;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text3)">2</div>
+        <div style="height:56px;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text3)">1</div>
+        <div style="font-size:10px;color:var(--text3);text-align:center;margin-top:4px">↑ Impacto</div>
+      </div>
+      <div style="flex:1">
+        <div class="hmg" id="hm"></div>
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-top:6px">
+          <div style="text-align:center;font-size:10px;color:var(--text3)">1</div><div style="text-align:center;font-size:10px;color:var(--text3)">2</div>
+          <div style="text-align:center;font-size:10px;color:var(--text3)">3</div><div style="text-align:center;font-size:10px;color:var(--text3)">4</div>
+          <div style="text-align:center;font-size:10px;color:var(--text3)">5</div>
+        </div>
+        <div style="text-align:center;font-size:10px;color:var(--text3);margin-top:4px">Probabilidade →</div>
+      </div>
+    </div>
+    <div class="hmtip" id="hmtip"></div>
+    <div class="hml">
+      <div class="hmli"><div class="hmlsq" style="background:#E24B4A"></div>Crítico (≥16)</div>
+      <div class="hmli"><div class="hmlsq" style="background:#F09595"></div>Alto (≥9)</div>
+      <div class="hmli"><div class="hmlsq" style="background:#FAC775"></div>Moderado (≥4)</div>
+      <div class="hmli"><div class="hmlsq" style="background:#C0DD97"></div>Baixo</div>
+    </div>
+  </div>
+</div>
+
+<div id="acoes" class="pane">
+  <div class="filt">
+    <button class="fb active" onclick="fa('todos',this)">Todas</button>
+    <button class="fb" onclick="fa('Concluido',this)">Concluídas</button>
+    <button class="fb" onclick="fa('Em andamento',this)">Em andamento</button>
+    <button class="fb" onclick="fa('Aguardando',this)">Aguardando</button>
+    <button class="fb" onclick="fa('Nao iniciado',this)">Não iniciadas</button>
+    <button class="fb" style="color:var(--crit);border-color:var(--crit)" onclick="fa('Atrasado',this)">Atrasadas ⚠</button>
+  </div>
+  <div class="card" style="padding:0;overflow:hidden">
+    <table class="tbl"><thead><tr><th>Risco</th><th>Ação</th><th>Tipo</th><th>Responsável</th><th>Prazo</th><th>Status</th><th>Observações</th></tr></thead>
+    <tbody id="tb-a"></tbody></table>
+  </div>
+</div>
+
+<div id="tl" class="pane">
+  <div class="card" style="max-width:820px">
+    <div class="ct">Histórico de reuniões do Comitê</div>
+    <div id="tline"></div>
+  </div>
+</div>
+</main>
+
+<script>
+// ════════════════════════════════════════════════════════
+// CONFIGURAÇÃO — altere APENAS esta linha após criar o
+// repositório no GitHub. Substitua SEU_USUARIO e
+// SEU_REPOSITORIO pelos valores corretos.
+// Formato: https://raw.githubusercontent.com/SEU_USUARIO/SEU_REPOSITORIO/main/dados.xlsx
+// ════════════════════════════════════════════════════════
+const DADOS_URL = "https://raw.githubusercontent.com/SEU_USUARIO/SEU_REPOSITORIO/main/dados.xlsx";
+// ════════════════════════════════════════════════════════
+
+const NB={Critico:'crit','Alto/Critico':'altocrit',Alto:'alto',Moderado:'mod',Baixo:'ok'};
+const NR={'Em Tratamento':'trat',Identificado:'id',Monitoramento:'await',Encerrado:'enc'};
+const NA={Concluido:'ok','Em andamento':'and',Aguardando:'await','Nao iniciado':'pend',Atrasado:'atr',Cancelado:'enc'};
+const NC={Critico:'#A32D2D','Alto/Critico':'#A32D2D',Alto:'#BA7517',Moderado:'#185FA5',Baixo:'#3B6D11'};
+const AC={Concluido:'#639922','Em andamento':'#BA7517',Aguardando:'#185FA5','Nao iniciado':'#888780',Atrasado:'#A32D2D',Cancelado:'#AAAAAA'};
+const ET={Realizada:'done',Atual:'now',Futura:'future'};
+const TC={'CR-TRAB-01':'trat','CR-TRAB-02':'alto','CR-TRAB-03':'crit','CR-TRAB-04':'mod','CR-TRAB-05':'altocrit','CR-TRAB-06':'alto'};
+
+let ACOES=[],chA=null,chN=null;
+
+function bd(t,c){return`<span class="bd bd-${c||'pend'}">${t||'—'}</span>`}
+function cod(t){return`<span class="cod">${t||''}</span>`}
+function hc(s){
+  if(s>=16)return{bg:'#E24B4A',fg:'#791F1F'};
+  if(s>=9) return{bg:'#F09595',fg:'#501313'};
+  if(s>=4) return{bg:'#FAC775',fg:'#633806'};
+  return{bg:'#C0DD97',fg:'#27500A'};
+}
+function setSt(msg,ld){
+  document.getElementById('st-msg').textContent=msg;
+  document.getElementById('st-sp').style.display=ld?'block':'none';
+}
+function s2j(wb,name){
+  const ws=wb.Sheets[name]; if(!ws) return[];
+  return XLSX.utils.sheet_to_json(ws,{defval:''});
+}
+
+async function load(){
+  try{
+    setSt('Carregando dados...',true);
+    const r=await fetch(DADOS_URL+'?v='+Date.now());
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const buf=await r.arrayBuffer();
+    const wb=XLSX.read(buf,{type:'array'});
+    const riscos=s2j(wb,'Riscos');
+    const acoes=s2j(wb,'Acoes');
+    const reunioes=s2j(wb,'Reunioes');
+    ACOES=acoes;
+    render(riscos,acoes,reunioes);
+    document.getElementById('t-upd').textContent='Atualizado: '+new Date().toLocaleString('pt-BR');
+    setSt('Dados carregados · '+new Date().toLocaleTimeString('pt-BR'),false);
+    document.getElementById('ovl').style.display='none';
+  }catch(e){
+    setSt('Erro ao carregar: '+e.message,false);
+    document.getElementById('ovl-msg').textContent='Erro ao carregar — verifique a URL do GitHub no HTML';
+    setTimeout(()=>document.getElementById('ovl').style.display='none',3000);
+  }
+}
+
+function render(riscos,acoes,reunioes){
+  const tot=riscos.length;
+  const crit=riscos.filter(r=>r.Nivel==='Critico'||r.Nivel==='Alto/Critico').length;
+  const alt=riscos.filter(r=>r.Nivel==='Alto').length;
+  const ab=acoes.filter(a=>a.Status!=='Concluido'&&a.Status!=='Cancelado').length;
+  const ok=acoes.filter(a=>a.Status==='Concluido').length;
+
+  document.getElementById('kpis').innerHTML=`
+    <div class="kpi"><div class="kl">Total de riscos</div><div class="kn blue">${tot}</div><div class="ks">Identificados até hoje</div></div>
+    <div class="kpi"><div class="kl">Críticos</div><div class="kn red">${crit}</div><div class="ks">Requerem ação imediata</div></div>
+    <div class="kpi"><div class="kl">Altos</div><div class="kn amber">${alt}</div><div class="ks">Em monitoramento</div></div>
+    <div class="kpi"><div class="kl">Ações em aberto</div><div class="kn amber">${ab}</div><div class="ks">Aguardando ou não iniciadas</div></div>
+    <div class="kpi"><div class="kl">Ações concluídas</div><div class="kn green">${ok}</div><div class="ks">De ${acoes.length} mapeadas</div></div>`;
+
+  document.getElementById('tbl-r').innerHTML=riscos.map(r=>`<tr>
+    <td>${cod(r.ID)}</td><td style="max-width:220px;line-height:1.5">${r.Nome||''}</td>
+    <td>${bd(r.Nivel,NB[r.Nivel])}</td><td>${bd(r.Status,NR[r.Status])}</td>
+    <td style="font-family:monospace;font-size:11px">${r.Score||'—'}</td>
+    <td style="font-family:monospace;font-size:11px">${r.Mitigacao_pct!=null&&r.Mitigacao_pct!==''?r.Mitigacao_pct+'%':'—'}</td>
+  </tr>`).join('');
+
+  const em=riscos.filter(r=>r.Status==='Em Tratamento');
+  document.getElementById('prog').innerHTML=em.length?em.map(r=>{
+    const p=Number(r.Mitigacao_pct||0);
+    return`<div class="pr"><div class="prl">${cod(r.ID)}<br><span style="color:var(--text3);font-size:10px">${(r.Nome||'').slice(0,34)}…</span></div>
+    <div class="prt"><div class="prf" style="width:${p}%"></div></div><div class="prp">${p}%</div></div>`;
+  }).join(''):'<p style="text-align:center;padding:20px;color:var(--text3)">Nenhum risco em tratamento</p>';
+
+  const sc={};acoes.forEach(a=>{sc[a.Status]=(sc[a.Status]||0)+1});
+  const sl=Object.keys(sc),sd=sl.map(k=>sc[k]),scc=sl.map(k=>AC[k]||'#888');
+  document.getElementById('leg-a').innerHTML=sl.map((l,i)=>`<div class="lgi"><div class="lgsq" style="background:${scc[i]}"></div>${l}: ${sd[i]}</div>`).join('');
+  if(chA)chA.destroy();
+  chA=new Chart(document.getElementById('ch-a'),{type:'doughnut',data:{labels:sl,datasets:[{data:sd,backgroundColor:scc,borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{display:false}}}});
+
+  const nc={};riscos.forEach(r=>{nc[r.Nivel]=(nc[r.Nivel]||0)+1});
+  const nl=Object.keys(nc),nd=nl.map(k=>nc[k]),ncc=nl.map(k=>NC[k]||'#888');
+  document.getElementById('leg-n').innerHTML=nl.map((l,i)=>`<div class="lgi"><div class="lgsq" style="background:${ncc[i]}"></div>${l}: ${nd[i]}</div>`).join('');
+  if(chN)chN.destroy();
+  chN=new Chart(document.getElementById('ch-n'),{type:'doughnut',data:{labels:nl,datasets:[{data:nd,backgroundColor:ncc,borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{display:false}}}});
+
+  const hm=document.getElementById('hm'); hm.innerHTML='';
+  for(let imp=5;imp>=1;imp--){
+    for(let prob=1;prob<=5;prob++){
+      const score=imp*prob;const{bg,fg}=hc(score);
+      const found=riscos.filter(r=>Number(r.Impacto)===imp&&Number(r.Probabilidade)===prob);
+      const cell=document.createElement('div');
+      cell.className='hmc'; cell.style.background=bg;
+      if(found.length){
+        cell.style.outline=`2px solid ${fg}`;
+        cell.innerHTML=found.map(r=>`<div style="color:${fg};font-size:9px;font-weight:700;text-align:center;line-height:1.2">${r.ID}</div>`).join('');
+        cell.onclick=()=>{
+          const tip=document.getElementById('hmtip'); tip.style.display='block';
+          tip.innerHTML=found.map(r=>`<strong>${r.ID}</strong> · ${r.Nome} · ${bd(r.Nivel,NB[r.Nivel])} · Score <strong>${score}</strong>`).join('<br>');
+        };
+      }else{
+        cell.innerHTML=`<div style="font-size:10px;color:${fg};opacity:.35">${score}</div>`;
+        cell.onclick=()=>{document.getElementById('hmtip').style.display='none'};
+      }
+      hm.appendChild(cell);
+    }
+  }
+
+  renderA('todos');
+
+  document.getElementById('tline').innerHTML=reunioes.map((r,i)=>{
+    const est=ET[r.Estado]||'done';
+    const tags=(r.Riscos_Tratados||'').split(';').filter(Boolean);
+    return`<div class="tli">
+      <div class="tll"><div class="tld ${est}">${r.Numero||''}</div>${i<reunioes.length-1?'<div class="tlln"></div>':''}</div>
+      <div class="tlc"><div class="tldt">${r.Data||''}</div><div class="tltit">${r.Titulo||''}</div>
+      <div class="tldsc">${r.Notas||''}</div>
+      ${tags.length?`<div class="tltgs">${tags.map(t=>`<span class="bd bd-${TC[t.trim()]||'mod'}">${t.trim()}</span>`).join('')}</div>`:''}</div></div>`;
+  }).join('');
+}
+
+function renderA(f){
+  const data=f==='todos'?ACOES:ACOES.filter(a=>a.Status===f);
+  document.getElementById('tb-a').innerHTML=data.length?data.map(a=>`<tr>
+    <td>${cod(a.ID_Risco)}</td><td style="max-width:260px;line-height:1.5">${a.Descricao_Acao||''}</td>
+    <td>${bd(a.Tipo,'mod')}</td><td>${a.Responsavel||'—'}</td>
+    <td class="${a.Status==='Atrasado'?'late':''}">${a.Prazo||'—'}${a.Status==='Atrasado'?' ⚠':''}</td>
+    <td>${bd(a.Status,NA[a.Status])}</td>
+    <td style="font-size:11px;color:var(--text3)">${a.Observacoes||''}</td>
+  </tr>`).join(''):'<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text3)">Nenhuma ação encontrada</td></tr>';
+}
+function fa(f,btn){document.querySelectorAll('.fb').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderA(f);}
+function showTab(id,tab){
+  document.querySelectorAll('.pane').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');tab.classList.add('active');
+}
+load();
+setInterval(load,5*60*1000);
+</script>
+</body>
+</html>
