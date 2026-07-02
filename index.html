@@ -370,6 +370,9 @@
     .decision-focus .plan-summary strong{color:#123eea}
     .plan-summary .mini-track{height:6px;background:#d8ddfb;margin-top:12px}
     .plan-summary .mini-fill{height:100%;background:#123eea}
+    .plan-button{margin-top:14px;border:1px solid var(--electric);background:var(--electric);color:#fff;font:700 10px "Manrope";letter-spacing:.04em;text-transform:uppercase;padding:10px 13px;cursor:pointer}
+    .plan-button:hover{background:#0b31c5}
+    .plan-button.secondary{background:#fff;color:var(--electric);cursor:default;opacity:.65}
     .detail h3{font-size:clamp(30px,3vw,48px);line-height:1.03;max-width:1180px}
     .plan-board{background:#fff;border:1px solid #cfd0cc;margin:22px 0}
     .plan-head{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;padding:20px;border-bottom:1px solid #d9dad6}
@@ -386,6 +389,15 @@
     .plan-step-title{font:600 13px/1.35 "Manrope";color:var(--black)}
     .plan-step-meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;font-size:9px;color:#6f716c}
     .plan-empty{padding:18px 20px;background:#fffbe8;border-top:1px solid #e7dba8;color:#6f5b18;font-size:12px}
+    .plan-modal{position:fixed;inset:0;z-index:1200;display:none;align-items:center;justify-content:center;padding:28px;background:rgba(10,14,25,.62);backdrop-filter:blur(6px)}
+    .plan-modal.open{display:flex}
+    .plan-dialog{width:min(1120px,calc(100vw - 34px));max-height:86vh;background:#f8f8f5;border:1px solid #d7d8d3;box-shadow:0 28px 80px rgba(0,0,0,.28);overflow:auto}
+    .plan-dialog-head{position:sticky;top:0;z-index:2;background:#fff;border-bottom:1px solid #d9dad6;padding:18px 22px;display:flex;justify-content:space-between;gap:18px;align-items:flex-start}
+    .plan-dialog-title{font:600 20px/1.15 "Manrope";letter-spacing:-.03em;margin-top:5px}
+    .plan-dialog-close{border:1px solid #c7c8c4;background:#fff;color:#111;font:700 10px "Manrope";letter-spacing:.06em;text-transform:uppercase;padding:9px 12px;cursor:pointer}
+    .plan-dialog-close:hover{border-color:var(--electric);color:var(--electric)}
+    .plan-dialog-body{padding:0 22px 22px}
+    .plan-dialog .plan-board{margin:22px 0 0}
     details.recap-event{display:block;padding:0}
     details.recap-event summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:90px 1fr auto;gap:28px;align-items:center;padding:22px 0;border-top:1px solid #bfc1bd}
     details.recap-event summary::-webkit-details-marker{display:none}
@@ -395,7 +407,7 @@
     .recap-detail{display:grid;grid-template-columns:90px minmax(230px,.72fr) minmax(360px,1.28fr);gap:28px;padding:0 0 28px}
     .recap-notes{font-size:12px}.recap-action strong{font-size:12px}.recap-action span{font-size:10px}
     .mobile-topic-list{display:none}
-    @media(max-width:900px){.kpis{grid-template-columns:1fr 1fr}.decision-focus{grid-template-columns:1fr}.plan-steps{grid-template-columns:1fr}.plan-head{display:block}.plan-progress{text-align:left;margin-top:16px}}
+    @media(max-width:900px){.kpis{grid-template-columns:1fr 1fr}.decision-focus{grid-template-columns:1fr}.plan-steps{grid-template-columns:1fr}.plan-head{display:block}.plan-progress{text-align:left;margin-top:16px}.plan-dialog-head{display:block}.plan-dialog-close{margin-top:14px}}
     @media(max-width:650px){
       .kpis{grid-template-columns:1fr 1fr}.kpi-value{font-size:43px}
       .topic-board{display:none}.mobile-topic-list{display:block}
@@ -450,6 +462,7 @@
 <body>
 <div class="shell">
   <div class="overlay" id="overlay"><div class="loader"><div class="loader-mark">S7</div><p id="overlayText">Conectando à base de riscos...</p></div></div>
+  <div class="plan-modal" id="planModal" aria-hidden="true"><div class="plan-dialog" role="dialog" aria-modal="true" aria-labelledby="planModalTitle"><div class="plan-dialog-head"><div><div class="section-label">Plano apresentado pelo responsável</div><div class="plan-dialog-title" id="planModalTitle">Roteiro de execução</div></div><button class="plan-dialog-close" onclick="closePlanModal()">Fechar</button></div><div class="plan-dialog-body" id="planModalBody"></div></div></div>
   <header class="masthead">
     <div class="mast-inner">
       <div class="brand"><div class="brand-mark">S7</div><div><div class="eyebrow">Seven Participações</div><h1>Seven.</h1></div></div>
@@ -636,6 +649,20 @@ function renderPlanBoard(plan){
   if(!steps.length)return`<section class="plan-board"><div class="plan-head"><div><div class="section-label">Plano de ação do responsável</div><h4>Nenhum plano apresentado</h4><p>Quando o responsável apresentar um plano, registre uma etapa por linha no Excel. Formato sugerido: Etapa | Responsável | Prazo | Status | Observação.</p></div></div><div class="plan-empty">Sem plano formal registrado para este tema.</div></section>`;
   return`<section class="plan-board"><div class="plan-head"><div><div class="section-label">Plano de ação do responsável</div><h4>Roteiro de execução apresentado</h4><p>Visualização estruturada das etapas informadas pelo responsável. Cada linha do campo Plano_Acao vira uma etapa acompanhável.</p></div><div class="plan-progress"><strong>${pct}%</strong><span>${done} de ${steps.length} etapa(s)</span><div class="plan-track"><div class="plan-fill" style="width:${pct}%"></div></div></div></div><div class="plan-steps">${steps.map((s,i)=>`<article class="plan-step"><div class="plan-step-number">${String(i+1).padStart(2,"0")}</div><div><div class="plan-step-title">${esc(s.title)}</div><div class="plan-step-meta">${s.status?badge(s.status,planStepStatusClass(s.status)):""}${s.owner?`<span>${esc(s.owner)}</span>`:""}${s.deadline?`<span>${esc(s.deadline)}</span>`:""}</div>${s.note?`<div class="note">${esc(s.note)}</div>`:""}</div></article>`).join("")}</div></section>`;
 }
+function openPlanModal(id){
+  const exposure=exposures.find(x=>same(x.ID_Exposicao,id));
+  if(!exposure)return;
+  const plan=clean(exposure.Plano_Acao||exposure.Plano_de_Acao);
+  $("planModalTitle").textContent=exposure.Nome||"Roteiro de execução";
+  $("planModalBody").innerHTML=renderPlanBoard(plan);
+  $("planModal").classList.add("open");
+  $("planModal").setAttribute("aria-hidden","false");
+}
+function closePlanModal(){
+  $("planModal").classList.remove("open");
+  $("planModal").setAttribute("aria-hidden","true");
+  $("planModalBody").innerHTML="";
+}
 function renderExposureDetail(forcedId){
   const rows=same(currentExposureFilter,"Todos")?exposures:exposures.filter(e=>same(e.Status,currentExposureFilter));
   if(!rows.length){$("exposureContent").innerHTML=`<div class="card empty">Nenhuma exposição encontrada neste filtro.</div>`;return}
@@ -651,9 +678,8 @@ function renderExposureDetail(forcedId){
   <div class="decision-focus">
     <div><label>Posição do responsável</label><strong>${esc(position||"Ainda não registrada")}</strong><p>${position?"Posicionamento formal constante da base.":"Aguardando resposta, ciência ou aceitação formal do risco."}</p></div>
     <div><label>Decisão do Comitê</label><strong>${esc(committeeDecision||"Pendente de deliberação")}</strong><p>${committeeDecision?"Deliberação registrada para acompanhamento.":"Registrar se o tema será monitorado, encerrado, aceito ou se exigirá novas providências."}</p></div>
-    <div class="plan-summary"><label>Plano de ação</label><strong>${ps.steps.length?`${ps.pct}% executado`:"Não apresentado"}</strong><p>${ps.steps.length?`${ps.done} de ${ps.steps.length} etapa(s) concluída(s)${ps.late?` · ${ps.late} atrasada(s)`:""}.`:"O responsável ainda não apresentou plano formal para este risco."}</p>${ps.steps.length?`<div class="mini-track"><div class="mini-fill" style="width:${ps.pct}%"></div></div>`:""}</div>
+    <div class="plan-summary"><label>Plano de ação</label><strong>${ps.steps.length?`${ps.pct}% executado`:"Não apresentado"}</strong><p>${ps.steps.length?`${ps.done} de ${ps.steps.length} etapa(s) concluída(s)${ps.late?` · ${ps.late} atrasada(s)`:""}. Roteiro apresentado pelo responsável.`:"O responsável ainda não apresentou plano formal para este risco."}</p>${ps.steps.length?`<div class="mini-track"><div class="mini-fill" style="width:${ps.pct}%"></div></div><button class="plan-button" onclick="openPlanModal(&quot;${esc(selected.ID_Exposicao)}&quot;)">Ver roteiro</button>`:`<button class="plan-button secondary" disabled>Sem roteiro</button>`}</div>
   </div>
-  ${renderPlanBoard(plan)}
   <div class="dossier-grid"><div class="dossier-main">
     <div class="panel-title">Formulário de exposição ao risco</div>
     <div class="risk-form">
@@ -704,6 +730,8 @@ function renderTimeline(){
       </div></div>
     </details>`}).join(""):`<div class="empty">Nenhuma reunião cadastrada.</div>`
 }
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closePlanModal()});
+$("planModal").addEventListener("click",e=>{if(e.target===$("planModal"))closePlanModal()});
 document.querySelectorAll(".tab").forEach(tab=>tab.addEventListener("click",()=>{document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));document.querySelectorAll(".pane").forEach(x=>x.classList.remove("active"));tab.classList.add("active");$(tab.dataset.pane).classList.add("active")}));
 Chart.defaults.font.family="DM Sans";Chart.defaults.color="#667386";
 loadData();setInterval(loadData,REFRESH_MS);
